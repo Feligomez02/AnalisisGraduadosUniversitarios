@@ -1,5 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats as stats
 
 # Load the data
 data = pd.read_csv('base_araucano.csv')
@@ -12,7 +14,7 @@ def clean_data(data):
     data = data.dropna()
     return data
 
-
+data = clean_data(data)
 # Print the median salary of each tipo_titulo_id
 mediana_por_titulo = data.groupby('tipo_titulo_id').median()['salario']
 print("Median Salary by tipo_titulo_id:", mediana_por_titulo)
@@ -91,7 +93,43 @@ axes[1, 2].set_title('Index correlating the salary with genre and tipo_titulo_id
 plt.tight_layout()
 plt.show()
 
+#Salary Histogram and Boxplots
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
 
+#Salary Histogram
+sns.histplot(data['salario']*8.6591, bins=50, kde=True, ax=axes[0])
+axes[0].set_title('Salary Histogram adjusted to July of 2024')
+axes[0].set_xlabel('Salary')
+axes[0].set_ylabel('Count')
 
+#Salary Boxplot by genre
+sns.boxplot(x='genero_id', y=data['salario'] * 8.6591, data=data, ax=axes[1])
+axes[1].set_title('Boxplot of Salaries by Genre')
+axes[1].set_xlabel('Genre')
+axes[1].set_ylabel('Adjusted Salary')
 
+#Salary Boxplot by tipo_titulo_id
+sns.boxplot(x='tipo_titulo_id', y=data['salario'] * 8.6591, data=data, ax=axes[2])
+axes[2].set_title('Boxplot of Salaries by Tipo de Título')
+axes[2].set_xlabel('Tipo de Título')
+axes[2].set_ylabel('Adjusted Salary')
 
+plt.tight_layout()
+plt.show()
+
+#Correlation between salary, genre, tipo_titulo and anionac
+correlation_matrix = data[['salario', 'genero_id', 'tipo_titulo_id', 'anionac']].corr()
+sns.heatmap(correlation_matrix, annot=True)
+plt.title('Correlation Matrix')
+plt.show()
+
+import statsmodels.api as sm
+
+# Prepare the data for the regression model
+X = data[['anionac', 'genero_id', 'tipo_titulo_id']]
+y = data['salario'] * 8.6591
+X = sm.add_constant(X)  # Agregar constante para el intercepto
+
+# Create the model
+model = sm.OLS(y, X).fit()
+print(model.summary())
